@@ -1,4 +1,4 @@
-import { Name, PublicKey } from "@wharfkit/antelope";
+import { Name, PublicKey } from "@pixelgeniusid/antelope";
 import { cargo } from "async";
 import { Collection } from "mongodb";
 import { IPermission } from "../../interfaces/table-permissions.js";

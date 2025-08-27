@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { APIClient, Asset, Name, UInt64 } from '@wharfkit/antelope';
+import { APIClient, Asset, Name, UInt64 } from '@pixelgeniusid/antelope';
 import { MongoClient, Db, IndexDescription } from 'mongodb';
 import { join } from 'node:path';
 import { cargo } from 'async';

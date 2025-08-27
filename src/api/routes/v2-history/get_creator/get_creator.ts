@@ -1,6 +1,6 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {timedQuery} from "../../../helpers/functions.js";
-import {API} from "@wharfkit/antelope";
+import {API} from "@pixelgeniusid/antelope";
 
 async function getCreator(fastify: FastifyInstance, request: FastifyRequest) {
 

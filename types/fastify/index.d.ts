@@ -3,7 +3,7 @@ import {StateHistorySocket} from "../../src/indexer/connections/state-history.js
 import {ConnectionManager} from "../../src/indexer/connections/manager.class.js";
 import {CacheManager} from "../../src/api/helpers/cacheManager.js";
 import {Client} from "@elastic/elasticsearch";
-import {AccountObject, ChainAPI} from "@wharfkit/antelope";
+import {AccountObject, ChainAPI} from "@pixelgeniusid/antelope";
 import {SavedAbi} from "../../src/interfaces/hyperion-abi.js";
 
 declare module 'fastify' {

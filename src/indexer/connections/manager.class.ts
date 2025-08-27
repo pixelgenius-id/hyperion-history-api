@@ -9,7 +9,7 @@ import {hLog} from "../helpers/common_functions.js";
 import {join} from "node:path";
 import {existsSync, readFileSync} from "fs";
 import {MongoClient} from "mongodb";
-import {APIClient} from "@wharfkit/antelope";
+import {APIClient} from "@pixelgeniusid/antelope";
 
 export class ConnectionManager {
 

@@ -1,4 +1,4 @@
-import { Name, UInt64 } from "@wharfkit/antelope";
+import { Name, UInt64 } from "@pixelgeniusid/antelope";
 import { cargo } from "async";
 import { IVoter } from "../../interfaces/table-voter.js";
 import { Synchronizer } from "./synchronizer.js";

@@ -10,7 +10,7 @@ import * as readline from 'readline';
 import * as amqp from 'amqplib';
 import { Redis } from 'ioredis';
 import { Client } from '@elastic/elasticsearch';
-import { APIClient } from '@wharfkit/antelope';
+import { APIClient } from '@pixelgeniusid/antelope';
 import { StateHistorySocket } from '../indexer/connections/state-history.js';
 import { MongoClient } from 'mongodb';
 import { IndexerController } from './controller-client/controller.client.js';

@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import {cargo, QueueObject} from 'async';
 import {Channel, ConfirmChannel} from 'amqplib';
-import {ABI, API, Bytes, Checksum256, Serializer, UInt32} from '@wharfkit/antelope';
+import {ABI, API, Bytes, Checksum256, Serializer, UInt32} from '@pixelgeniusid/antelope';
 
 import {HyperionWorker} from './hyperionWorker.js';
 import {debugLog, hLog} from '../helpers/common_functions.js';

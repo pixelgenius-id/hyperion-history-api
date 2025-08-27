@@ -13,7 +13,7 @@ import { HyperionAbi } from "../../interfaces/hyperion-abi.js";
 import { TransactionTrace } from "../../interfaces/action-trace.js";
 import { HyperionSignedBlock, ProducerSchedule } from "../../interfaces/signed-block.js";
 import { estypes } from "@elastic/elasticsearch";
-import { ABI, Action, PackedTransaction, Serializer } from "@wharfkit/antelope";
+import { ABI, Action, PackedTransaction, Serializer } from "@pixelgeniusid/antelope";
 import { TokenAccount } from "../../interfaces/custom-ds.js";
 import { GetBlocksResultV0 } from "./state-reader.js";
 import { de } from "zod/v4/locales";

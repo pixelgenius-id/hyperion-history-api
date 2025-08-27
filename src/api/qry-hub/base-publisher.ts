@@ -1,4 +1,4 @@
-import { PrivateKey, PublicKey } from "@wharfkit/antelope";
+import { PrivateKey, PublicKey } from "@pixelgeniusid/antelope";
 import { io, Socket as SocketIO } from "socket.io-client";
 import { hLog } from "../../indexer/helpers/common_functions.js";
 
