@@ -39,7 +39,14 @@ export class IndexerController {
                 return;
             }
 
-            const controlPort = config.chains[this.chain].control_port;
+             const chainConfig = config.chains[this.chain];
+                if (!chainConfig) {
+                    this.connectionPromise = null;
+                    reject(new Error(`No configuration found for chain: ${this.chain}`));
+                    return;
+                }
+                const controlPort = chainConfig.control_port;
+
             let hyperionIndexer = `ws://localhost:${controlPort}`;
             if (this.host) {
                 hyperionIndexer = `ws://${this.host}:${controlPort}`;
