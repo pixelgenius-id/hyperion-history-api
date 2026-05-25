@@ -627,7 +627,11 @@ export async function repairChain(chain: string, file: string, args: any) {
 
 export async function fillMissingBlocksFromFile(host: any, chain: string, file: string, dryRun: boolean, startFrom = 0) {
     const config = readConnectionConfig();
-    const controlPort = config.chains[chain].control_port;
+    let controlPort = config.chains[chain]?.control_port;
+    if (!controlPort) {
+        controlPort = 7002;
+        console.warn(`control_port not defined in connections.json for chain '${chain}', using default: ${controlPort}`);
+    }
     let hyperionIndexer = `ws://localhost:${controlPort}`;
     if (host) {
         hyperionIndexer = `ws://${host}:${controlPort}`;

@@ -176,9 +176,10 @@ async function purgeQueue(chain: string, queueName: string, options: any) {
 async function getControllerPort(chain: string): Promise<number> {
     try {
         const config = readConnectionConfig();
-        const controlPort = config.chains[chain]?.control_port;
+        let controlPort = config.chains[chain]?.control_port;
         if (!controlPort) {
-            throw new Error(`No control_port configured for chain '${chain}' in connections.json`);
+            controlPort = 7002;
+            console.warn(`control_port not defined in connections.json for chain '${chain}', using default: ${controlPort}`);
         }
         return controlPort;
     } catch (error: any) {

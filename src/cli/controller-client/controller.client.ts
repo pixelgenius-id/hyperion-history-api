@@ -45,7 +45,11 @@ export class IndexerController {
                 reject(new Error(`No configuration found for chain: ${this.chain}`));
                 return;
             }
-            const controlPort = chainConfig.control_port;
+            let controlPort = chainConfig.control_port;
+            if (!controlPort) {
+                controlPort = 7002;
+                console.warn(`control_port not defined in connections.json for chain '${this.chain}', using default: ${controlPort}`);
+            }
             let hyperionIndexer = `ws://localhost:${controlPort}`;
             if (this.host) {
                 hyperionIndexer = `ws://${this.host}:${controlPort}`;
