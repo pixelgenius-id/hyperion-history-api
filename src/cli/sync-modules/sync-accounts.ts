@@ -111,6 +111,7 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
             this.currentContract = contract;
             this.currentContractIndex = i;
             this.currentContractScopes = 0;
+            this.currentScope = '';
             console.log(`[DEBUG] Starting contract ${i + 1}/${this.tokenContracts.length}: ${contract}`);
             
             let lowerBound: string = '';
@@ -194,7 +195,7 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
             const progressPercent = this.totalContracts > 0 ? ((this.completedContracts / this.totalContracts) * 100).toFixed(1) : '0.0';
 
             let statusMessage: string;
-            if (this.completedContracts >= this.totalContracts) {
+            if (this.totalContracts > 0 && this.completedContracts >= this.totalContracts) {
                 statusMessage = 'finalizing database writes...';
             } else if (this.currentContract) {
                 // currentContractIndex is 0-based and set when a contract starts, so +1 reflects the contract in progress
