@@ -8,12 +8,13 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
     private accountCollection?: Collection<IAccount>;
     private contractAccounts: string[] = [];
     private tokenContracts: string[] = [];
-    private totalScopes: number = 0;
-    private processedScopes: number = 0;
-    private totalScopesToProcess: number = 0;
+    private completedContracts: number = 0;
+    private totalContracts: number = 0;
     private currentContractIndex: number = 0;
     private currentContract: string = '';
     private currentScope: string = '';
+    private currentContractScopes: number = 0; // holder scopes processed in the current contract
+    private totalScopesProcessed: number = 0;  // holder scopes processed across all contracts
     private contractFilter?: string;
 
     constructor(chain: string, contractFilter?: string) {
@@ -109,6 +110,8 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
             const contract = this.tokenContracts[i];
             this.currentContract = contract;
             this.currentContractIndex = i;
+            this.currentContractScopes = 0;
+            this.currentScope = '';
             console.log(`[DEBUG] Starting contract ${i + 1}/${this.tokenContracts.length}: ${contract}`);
             
             let lowerBound: string = '';
@@ -143,12 +146,14 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
                     } catch (e: any) {
                         console.log(`Failed to check balance ${row.scope}@${contract} - ${e.message}`);
                     }
+                    this.currentContractScopes++;
+                    this.totalScopesProcessed++;
                 }
                 lowerBound = scopes.more;
             } while (lowerBound !== '');
-            
+
             // Mark this contract as processed
-            this.processedScopes = i + 1;
+            this.completedContracts = i + 1;
             console.log(`[DEBUG] Completed contract ${i + 1}/${this.tokenContracts.length}: ${contract}`);
         }
         console.log(`[DEBUG] All contracts processed`);
@@ -169,7 +174,7 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
         
         await this.scanABIs();
         console.log(`Number of validated token contracts: ${this.tokenContracts.length}`);
-        this.totalScopesToProcess = this.tokenContracts.length;
+        this.totalContracts = this.tokenContracts.length;
 
         await this.setupMongo();
 
@@ -184,17 +189,24 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
                 }
                 return;
             }
-            const progressPercent = this.totalScopesToProcess > 0 ? ((this.processedScopes / this.totalScopesToProcess) * 100).toFixed(2) : '0.00';
-            
-            let statusMessage = '';
-            if (this.processedScopes >= this.totalScopesToProcess) {
+            // Percentage is driven by completed contracts (the only total known up front).
+            // The holder/balance counters below move continuously so a long single-contract
+            // sync no longer looks stuck at 0%.
+            const progressPercent = this.totalContracts > 0 ? ((this.completedContracts / this.totalContracts) * 100).toFixed(1) : '0.0';
+
+            let statusMessage: string;
+            if (this.totalContracts > 0 && this.completedContracts >= this.totalContracts) {
                 statusMessage = 'finalizing database writes...';
+            } else if (this.currentContract) {
+                // currentContractIndex is 0-based and set when a contract starts, so +1 reflects the contract in progress
+                const contractPos = Math.min(this.currentContractIndex + 1, this.totalContracts);
+                statusMessage = `contract ${contractPos}/${this.totalContracts} ${this.currentContract} (${this.currentContractScopes} holders) - current: ${this.currentScope || '...'}`;
             } else {
-                statusMessage = this.currentContract ? `${this.currentScope}@${this.currentContract}` : 'initializing...';
+                statusMessage = 'initializing...';
             }
-            
+
             const timestamp = new Date().toISOString().split('T')[1].split('.')[0]; // HH:MM:SS format
-            console.log(`[${timestamp}] Progress: ${this.processedScopes}/${this.totalScopesToProcess} (${progressPercent}%) - ${statusMessage} - ${this.totalItems} accounts`);
+            console.log(`[${timestamp}] ${progressPercent}% | holders scanned: ${this.totalScopesProcessed} | balances: ${this.totalItems} | ${statusMessage}`);
         }, 1000);
 
         try {
