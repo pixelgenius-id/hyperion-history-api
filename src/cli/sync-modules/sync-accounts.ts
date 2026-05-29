@@ -82,7 +82,7 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
                             const fields = transferType.fields;
                             let valid = true;
                             for (let i = 0; i < transferFields.length; i++) {
-                                if (fields[i] && (fields[i].name === "from" || fields[i].name === "to") && fields[i].type === 'account_name') {
+                                if (fields[i] && fields[i].name === transferFields[i].name && fields[i].type === 'account_name') {
                                     valid = true;
                                     continue;
                                 }
