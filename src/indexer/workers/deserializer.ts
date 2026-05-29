@@ -609,7 +609,14 @@ export default class MainDSWorker extends HyperionWorker {
             }
         }
 
-        let selected_q = 1;
+        // Heatmap worker ids in dsPoolMap[_code][2] are 0-indexed (master builds them
+        // with `for (let i = 0; i < pool_size; i++)`), and the `selected_q += 1` below
+        // converts a 0-indexed worker id to its 1-indexed ds_pool queue. Initialize to 0
+        // so that a contract with no heatmap assignment falls back to the FIRST pool
+        // worker (queue ds_pool:1). Previously this was 1, so unassigned contracts routed
+        // to a non-existent ds_pool:2 — silently dropping all their action traces when
+        // ds_pool_size is 1 (the unrouted-queue publish is a no-op).
+        let selected_q = 0;
         const _code = first_action.act.account;
 
         switch (this.conf.scaling.routing_mode) {
