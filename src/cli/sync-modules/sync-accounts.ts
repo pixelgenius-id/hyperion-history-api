@@ -68,18 +68,25 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
                 const abi = await this.client.v1.chain.get_abi(contract);
                 const tables = new Set(abi.abi?.tables?.map(value => value.name));
                 if (tables.has("accounts") && tables.has("stat")) {
-                    const actions = new Set(abi.abi?.actions?.map(value => value.name));
-                    if (actions.has("transfer")) {
-                        const transferType = abi.abi?.structs?.find(s => s.name === 'transfer');
+                    // Resolve the transfer parameter struct through the transfer action's
+                    // declared `type`, not the literal name "transfer". Per the ABI spec the
+                    // struct backing an action is named by the action's `type` field, which is
+                    // frequently NOT the action name — e.g. the paycash contracts (token.pcash,
+                    // cashescashes, swap.pcash, ...) declare a standard transfer under the struct
+                    // name "transfer_token". Looking the struct up by name === "transfer" returned
+                    // undefined and silently dropped these valid token contracts from the backfill.
+                    const transferAction = abi.abi?.actions?.find(a => a.name === "transfer");
+                    if (transferAction) {
+                        const transferType = abi.abi?.structs?.find(s => s.name === transferAction.type);
                         if (transferType && transferType.fields) {
                             const fields = transferType.fields;
                             let valid = true;
                             for (let i = 0; i < transferFields.length; i++) {
-                                if ((fields[i].name === "from" || fields[i].name === "to") && fields[i].type === 'account_name') {
+                                if (fields[i] && (fields[i].name === "from" || fields[i].name === "to") && fields[i].type === 'account_name') {
                                     valid = true;
                                     continue;
                                 }
-                                if (fields[i].name !== transferFields[i].name || fields[i].type !== transferFields[i].type) {
+                                if (!fields[i] || fields[i].name !== transferFields[i].name || fields[i].type !== transferFields[i].type) {
                                     console.error(`Invalid token contract ${contract} ->> ${fields.map(f => (f.name + "(" + f.type + ")").padEnd(24, " ")).join('  ')}`);
                                     valid = false;
                                     break;
