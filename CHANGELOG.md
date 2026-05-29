@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased (dev)
+
+### Fixes
+
+*   **`/v2/state/get_tokens` missing balances — token-contract detection in `sync accounts`**: `./hyp-control sync accounts` (and `sync all`) resolved a contract's transfer parameter struct by the hard-coded struct name `"transfer"`. Per the ABI spec the struct backing an action is named by the action's `type` field, which is frequently *not* the action name — e.g. several contracts declare a fully standard transfer (`from:name, to:name, quantity:asset, memo:string`) under the struct name `transfer_token`. Those contracts were silently skipped, so their balances were never backfilled into the MongoDB `accounts` collection and `get_tokens` returned only the symbols the live indexer happened to capture — producing a "same contract, some symbols present and some missing" result on upgraded nodes. The struct is now resolved through the transfer action's declared `type`. **After upgrading, re-run `./hyp-control sync accounts <chain>` (or `sync all`) to backfill the previously skipped contracts.**
+
 ## 4.0.7 (2026-05-16)
 
 > **4.0.6 was skipped.** The 4.0.6 version sat on `main` untagged for a period and some operators deployed it directly from `main` before any release tag existed. To avoid ambiguity between those pre-tag production deployments and the official artifact, this work is released as **4.0.7**. There is no separate 4.0.6 entry. Going forward, `main` only advances to tagged releases and active development happens on `dev`.
