@@ -79,52 +79,48 @@ export function applyTimeFilter(query, queryStruct) {
             query['before'] = query['before'].replace(' ', 'T');
         }
 
-        if (query['after']?.includes('T') || query['before']?.includes('T')) {
-            let _lte = "now";
-            let _gte = "0";
-            if (query['before']) {
+        // Each bound is classified independently: ISO date strings (containing 'T')
+        // filter on @timestamp, bare positive integers filter on block_num. Handling
+        // them separately lets the two bound types be mixed — e.g. a block-number
+        // "after" together with an ISO-date "before". Previously a single branch was
+        // chosen for both bounds, so a block number passed alongside a date was fed to
+        // new Date(...) and threw "Invalid time value".
+        const tsRange: any = {};
+        const blockRange: any = {};
+
+        if (query['after']) {
+            if (typeof query['after'] === 'string' && query['after'].includes('T')) {
                 try {
-                    _lte = new Date(query['before']).toISOString();
-                } catch (e: any) {
-                    badRequest(e.message + ' [before]');
-                }
-            }
-            if (query['after']) {
-                try {
-                    _gte = new Date(query['after']).toISOString();
+                    tsRange['gte'] = new Date(query['after']).toISOString();
                 } catch (e: any) {
                     badRequest(e.message + ' [after]');
                 }
+            } else if (parseInt(query['after']) > 0) {
+                blockRange['gte'] = query['after'];
             }
+        }
+
+        if (query['before']) {
+            if (typeof query['before'] === 'string' && query['before'].includes('T')) {
+                try {
+                    tsRange['lte'] = new Date(query['before']).toISOString();
+                } catch (e: any) {
+                    badRequest(e.message + ' [before]');
+                }
+            } else if (parseInt(query['before']) > 0) {
+                blockRange['lte'] = query['before'];
+            }
+        }
+
+        if (Object.keys(tsRange).length > 0 || Object.keys(blockRange).length > 0) {
             if (!queryStruct.bool['filter']) {
                 queryStruct.bool['filter'] = [];
             }
-            queryStruct.bool['filter'].push({
-                range: {
-                    "@timestamp": {
-                        "gte": _gte,
-                        "lte": _lte
-                    }
-                }
-            });
-        } else {
-            // search by block number
-            const rangeObj = {
-                range: {
-                    block_num: {}
-                }
-            };
-            if (parseInt(query['after']) > 0) {
-                rangeObj.range.block_num['gte'] = query['after'];
+            if (Object.keys(tsRange).length > 0) {
+                queryStruct.bool['filter'].push({range: {"@timestamp": tsRange}});
             }
-            if (parseInt(query['before']) > 0) {
-                rangeObj.range.block_num['lte'] = query['before'];
-            }
-            if (Object.keys(rangeObj.range.block_num).length > 0) {
-                if (!queryStruct.bool['filter']) {
-                    queryStruct.bool['filter'] = [];
-                }
-                queryStruct.bool['filter'].push(rangeObj);
+            if (Object.keys(blockRange).length > 0) {
+                queryStruct.bool['filter'].push({range: {block_num: blockRange}});
             }
         }
     }
@@ -283,7 +279,7 @@ export function getSortDir(query, maxAscWindowDays = 90) {
                 if (!isNaN(afterDate.getTime())) {
                     const maxAge = Date.now() - (maxAscWindowDays * 86400000);
                     if (afterDate.getTime() < maxAge) {
-                        badRequest(`sort=asc "after" date must be within the last ${maxAscWindowDays} days`);
+                        badRequest(`sort=asc "after" date must be within the last ${maxAscWindowDays} days — use block numbers for "after"/"before" to query older ranges`);
                     }
                 }
             }

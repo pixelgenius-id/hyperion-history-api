@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { getSortDir } from '../../src/api/routes/v2-history/get_actions/functions.js';
+import { getSortDir, applyTimeFilter } from '../../src/api/routes/v2-history/get_actions/functions.js';
 
 describe('getSortDir', () => {
 
@@ -87,5 +87,60 @@ describe('getSortDir', () => {
     // Block numbers bypass max window check (no date to validate)
     it('should not apply max window check on block numbers', () => {
         expect(getSortDir({ sort: 'asc', after: '100' })).toBe('asc');
+    });
+});
+
+describe('applyTimeFilter (mixed date / block-number bounds)', () => {
+
+    const newStruct = () => ({ bool: { must: [], boost: 1.0 } as any });
+
+    // Regression: this exact combination used to return 400 "Invalid time value [after]"
+    it('block-number "after" + ISO-date "before" produces both ranges', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '437506277', before: '2026-06-01T08:06:13' }, qs);
+        const blockR = qs.bool.filter.find((f: any) => f.range.block_num);
+        const tsR = qs.bool.filter.find((f: any) => f.range['@timestamp']);
+        expect(blockR.range.block_num.gte).toBe('437506277');
+        expect(blockR.range.block_num.lte).toBeUndefined();
+        expect(tsR.range['@timestamp'].lte).toBe(new Date('2026-06-01T08:06:13').toISOString());
+        expect(tsR.range['@timestamp'].gte).toBeUndefined();
+    });
+
+    it('ISO-date "after" + block-number "before" produces both ranges', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '2025-01-01T00:00:00Z', before: '500000000' }, qs);
+        const blockR = qs.bool.filter.find((f: any) => f.range.block_num);
+        const tsR = qs.bool.filter.find((f: any) => f.range['@timestamp']);
+        expect(tsR.range['@timestamp'].gte).toBe(new Date('2025-01-01T00:00:00Z').toISOString());
+        expect(blockR.range.block_num.lte).toBe('500000000');
+    });
+
+    it('two block numbers collapse into a single block_num range', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '100', before: '200' }, qs);
+        expect(qs.bool.filter.length).toBe(1);
+        expect(qs.bool.filter[0].range.block_num).toEqual({ gte: '100', lte: '200' });
+    });
+
+    it('two ISO dates collapse into a single @timestamp range', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '2026-01-01T00:00:00Z', before: '2026-02-01T00:00:00Z' }, qs);
+        expect(qs.bool.filter.length).toBe(1);
+        expect(qs.bool.filter[0].range['@timestamp']).toEqual({
+            gte: new Date('2026-01-01T00:00:00Z').toISOString(),
+            lte: new Date('2026-02-01T00:00:00Z').toISOString()
+        });
+    });
+
+    it('space-separated datetime is normalized to ISO and filters on @timestamp', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '2026-01-01 00:00:00' }, qs);
+        expect(qs.bool.filter[0].range['@timestamp'].gte).toBe(new Date('2026-01-01T00:00:00').toISOString());
+    });
+
+    it('no bounds → no filter added', () => {
+        const qs = newStruct();
+        applyTimeFilter({}, qs);
+        expect(qs.bool.filter).toBeUndefined();
     });
 });

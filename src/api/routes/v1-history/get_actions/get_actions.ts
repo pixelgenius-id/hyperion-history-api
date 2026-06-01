@@ -212,7 +212,7 @@ async function getActions(fastify: FastifyInstance, request: FastifyRequest) {
                 if (!isNaN(afterDate.getTime())) {
                     const maxAge = Date.now() - (maxAscWindowDays * 86400000);
                     if (afterDate.getTime() < maxAge) {
-                        return {error: `sort=asc "after" date must be within the last ${maxAscWindowDays} days`};
+                        return {error: `sort=asc "after" date must be within the last ${maxAscWindowDays} days — use block numbers for "after"/"before" to query older ranges`};
                     }
                 }
             }
@@ -263,14 +263,34 @@ async function getActions(fastify: FastifyInstance, request: FastifyRequest) {
     }
 
     if (reqBody['after'] || reqBody['before']) {
-        let _lte = "now";
-        let _gte = 0;
-        if (reqBody['before']) _lte = reqBody['before'];
-        if (reqBody['after']) _gte = reqBody['after'];
+        // Classify each bound independently: ISO date strings (containing 'T') filter
+        // on @timestamp, bare positive integers filter on block_num, so the two bound
+        // types can be mixed (e.g. a block-number "after" with an ISO-date "before").
+        const tsRange: any = {};
+        const blockRange: any = {};
+        const after = reqBody['after'];
+        const before = reqBody['before'];
+        if (after) {
+            if (typeof after === 'string' && after.includes('T')) {
+                tsRange['gte'] = after;
+            } else if (parseInt(after) > 0) {
+                blockRange['gte'] = after;
+            }
+        }
+        if (before) {
+            if (typeof before === 'string' && before.includes('T')) {
+                tsRange['lte'] = before;
+            } else if (parseInt(before) > 0) {
+                blockRange['lte'] = before;
+            }
+        }
         if (!queryStruct.bool['filter']) queryStruct.bool['filter'] = [];
-        queryStruct.bool['filter'].push({
-            range: {"@timestamp": {"gte": _gte, "lte": _lte}}
-        });
+        if (Object.keys(tsRange).length > 0) {
+            queryStruct.bool['filter'].push({range: {"@timestamp": tsRange}});
+        }
+        if (Object.keys(blockRange).length > 0) {
+            queryStruct.bool['filter'].push({range: {block_num: blockRange}});
+        }
     }
     if (reqBody.filter) {
         queryStruct.bool['should'] = filterObj;
