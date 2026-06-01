@@ -3,6 +3,7 @@ import {mergeActionMeta, timedQuery} from "../../../helpers/functions.js";
 import {hLog} from "../../../../indexer/helpers/common_functions.js";
 import {Abieos} from "@eosrio/node-abieos";
 import {terms} from "../../v2-history/get_actions/definitions.js";
+import {isBlockNumber} from "../../v2-history/get_actions/functions.js";
 import {Client, estypes} from "@elastic/elasticsearch";
 import {ABI, Serializer} from "@wharfkit/antelope";
 import {SavedAbi} from "../../../../interfaces/hyperion-abi.js";
@@ -206,8 +207,10 @@ async function getActions(fastify: FastifyInstance, request: FastifyRequest) {
             if (!isValidBound(after) && !isValidBound(before)) {
                 return {error: 'sort=asc requires a valid "after" or "before" (ISO date or block number) to bound the search'};
             }
-            // validate the time window is not too wide (only for ISO date strings, not block numbers)
-            if (typeof after === 'string' && after.includes('T')) {
+            // Apply the recency window to a *date* "after" bound. Block-number bounds are
+            // exempt. Classified the same way as the range filter below so a date without
+            // a 'T' (e.g. "2026-01-01", or "0" which parses to year 2000) cannot slip past.
+            if (after && !isBlockNumber(after)) {
                 const afterDate = new Date(after);
                 if (!isNaN(afterDate.getTime())) {
                     const maxAge = Date.now() - (maxAscWindowDays * 86400000);
@@ -263,25 +266,25 @@ async function getActions(fastify: FastifyInstance, request: FastifyRequest) {
     }
 
     if (reqBody['after'] || reqBody['before']) {
-        // Classify each bound independently: ISO date strings (containing 'T') filter
-        // on @timestamp, bare positive integers filter on block_num, so the two bound
-        // types can be mixed (e.g. a block-number "after" with an ISO-date "before").
+        // Classify each bound independently: bare positive integers filter on block_num,
+        // anything else is treated as a date/timestamp filter on @timestamp, so the two
+        // bound types can be mixed (e.g. a block-number "after" with an ISO-date "before").
         const tsRange: any = {};
         const blockRange: any = {};
         const after = reqBody['after'];
         const before = reqBody['before'];
         if (after) {
-            if (typeof after === 'string' && after.includes('T')) {
-                tsRange['gte'] = after;
-            } else if (parseInt(after) > 0) {
+            if (isBlockNumber(after)) {
                 blockRange['gte'] = after;
+            } else {
+                tsRange['gte'] = after;
             }
         }
         if (before) {
-            if (typeof before === 'string' && before.includes('T')) {
-                tsRange['lte'] = before;
-            } else if (parseInt(before) > 0) {
+            if (isBlockNumber(before)) {
                 blockRange['lte'] = before;
+            } else {
+                tsRange['lte'] = before;
             }
         }
         if (!queryStruct.bool['filter']) queryStruct.bool['filter'] = [];

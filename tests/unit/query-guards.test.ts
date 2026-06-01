@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { getSortDir, applyTimeFilter } from '../../src/api/routes/v2-history/get_actions/functions.js';
+import { getSortDir, applyTimeFilter, isBlockNumber } from '../../src/api/routes/v2-history/get_actions/functions.js';
 
 describe('getSortDir', () => {
 
@@ -50,12 +50,11 @@ describe('getSortDir', () => {
     });
 
     // sort=asc with invalid bounds
-    it('should throw for sort=asc with after="0" (neither valid date with T nor positive int)', () => {
-        // "0" is truthy, new Date("0") parses to 2000-01-01 (valid), Number("0") = 0 (not > 0)
-        // isValidBound: Date parse succeeds → passes bounds check
-        // But "0" doesn't contain 'T', so max window check is skipped → returns asc
-        // This is acceptable: "0" as a date will produce @timestamp range that ES handles
-        expect(getSortDir({ sort: 'asc', after: '0' })).toBe('asc');
+    it('should reject sort=asc with after="0" (not a positive int → treated as a date, year 2000, outside the window)', () => {
+        // "0" is not a positive integer, so it is classified as a date. new Date("0")
+        // resolves to year 2000 — far outside the recency window — so it is now rejected
+        // instead of silently bypassing the guard.
+        expect(() => getSortDir({ sort: 'asc', after: '0' })).toThrow('within the last');
     });
 
     it('should throw for sort=asc with after=0 (falsy)', () => {
@@ -87,6 +86,17 @@ describe('getSortDir', () => {
     // Block numbers bypass max window check (no date to validate)
     it('should not apply max window check on block numbers', () => {
         expect(getSortDir({ sort: 'asc', after: '100' })).toBe('asc');
+    });
+
+    // Date strings WITHOUT a 'T' separator must still be window-checked (previously they
+    // slipped past because the check only fired on strings containing 'T').
+    it('should reject sort=asc with an old date that has no T separator', () => {
+        expect(() => getSortDir({ sort: 'asc', after: '2020-01-01' })).toThrow('within the last');
+    });
+
+    it('should allow sort=asc with a recent date that has no T separator', () => {
+        const todayDateOnly = new Date(Date.now() - 3600000).toISOString().split('T')[0];
+        expect(getSortDir({ sort: 'asc', after: todayDateOnly })).toBe('asc');
     });
 });
 
@@ -142,5 +152,29 @@ describe('applyTimeFilter (mixed date / block-number bounds)', () => {
         const qs = newStruct();
         applyTimeFilter({}, qs);
         expect(qs.bool.filter).toBeUndefined();
+    });
+
+    // Regression: a date string without 'T' must be a @timestamp bound, not block 2026
+    it('classifies a date-only string (no T) as a @timestamp bound, not a block number', () => {
+        const qs = newStruct();
+        applyTimeFilter({ after: '2026-01-01' }, qs);
+        expect(qs.bool.filter.find((f: any) => f.range.block_num)).toBeUndefined();
+        expect(qs.bool.filter[0].range['@timestamp'].gte).toBe(new Date('2026-01-01').toISOString());
+    });
+});
+
+describe('isBlockNumber', () => {
+    it('treats bare positive integers (string or number) as block numbers', () => {
+        expect(isBlockNumber('437506277')).toBe(true);
+        expect(isBlockNumber(437506277)).toBe(true);
+        expect(isBlockNumber('1')).toBe(true);
+    });
+
+    it('treats dates, zero, and non-integers as NOT block numbers', () => {
+        expect(isBlockNumber('2026-01-01')).toBe(false);
+        expect(isBlockNumber('2026-06-01T08:06:13')).toBe(false);
+        expect(isBlockNumber('0')).toBe(false);
+        expect(isBlockNumber('')).toBe(false);
+        expect(isBlockNumber('garbage')).toBe(false);
     });
 });
