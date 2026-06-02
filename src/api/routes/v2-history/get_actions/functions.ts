@@ -68,6 +68,14 @@ function addRangeQuery(queryStruct, prop, pkey, query) {
     queryStruct.bool.must.push({range: _termQuery});
 }
 
+// A bound is a block number when it is a bare positive integer; any other value
+// (ISO date string, etc.) is treated as a date/timestamp. Number() is strict where
+// parseInt is not — Number("2026-01-01") is NaN — so a date without a 'T' is correctly
+// classified as a date rather than as block 2026.
+export function isBlockNumber(v: any): boolean {
+    return Number.isInteger(Number(v)) && Number(v) > 0;
+}
+
 export function applyTimeFilter(query, queryStruct) {
     if (query['after'] || query['before']) {
 
@@ -79,52 +87,48 @@ export function applyTimeFilter(query, queryStruct) {
             query['before'] = query['before'].replace(' ', 'T');
         }
 
-        if (query['after']?.includes('T') || query['before']?.includes('T')) {
-            let _lte = "now";
-            let _gte = "0";
-            if (query['before']) {
+        // Each bound is classified independently: bare positive integers filter on
+        // block_num, anything else is treated as a date/timestamp filter on @timestamp.
+        // Handling them separately lets the two bound types be mixed — e.g. a
+        // block-number "after" together with an ISO-date "before" (previously a single
+        // branch was chosen for both bounds, so a block number passed alongside a date
+        // was fed to new Date(...) and threw "Invalid time value").
+        const tsRange: any = {};
+        const blockRange: any = {};
+
+        if (query['after']) {
+            if (isBlockNumber(query['after'])) {
+                blockRange['gte'] = query['after'];
+            } else {
                 try {
-                    _lte = new Date(query['before']).toISOString();
-                } catch (e: any) {
-                    badRequest(e.message + ' [before]');
-                }
-            }
-            if (query['after']) {
-                try {
-                    _gte = new Date(query['after']).toISOString();
+                    tsRange['gte'] = new Date(query['after']).toISOString();
                 } catch (e: any) {
                     badRequest(e.message + ' [after]');
                 }
             }
+        }
+
+        if (query['before']) {
+            if (isBlockNumber(query['before'])) {
+                blockRange['lte'] = query['before'];
+            } else {
+                try {
+                    tsRange['lte'] = new Date(query['before']).toISOString();
+                } catch (e: any) {
+                    badRequest(e.message + ' [before]');
+                }
+            }
+        }
+
+        if (Object.keys(tsRange).length > 0 || Object.keys(blockRange).length > 0) {
             if (!queryStruct.bool['filter']) {
                 queryStruct.bool['filter'] = [];
             }
-            queryStruct.bool['filter'].push({
-                range: {
-                    "@timestamp": {
-                        "gte": _gte,
-                        "lte": _lte
-                    }
-                }
-            });
-        } else {
-            // search by block number
-            const rangeObj = {
-                range: {
-                    block_num: {}
-                }
-            };
-            if (parseInt(query['after']) > 0) {
-                rangeObj.range.block_num['gte'] = query['after'];
+            if (Object.keys(tsRange).length > 0) {
+                queryStruct.bool['filter'].push({range: {"@timestamp": tsRange}});
             }
-            if (parseInt(query['before']) > 0) {
-                rangeObj.range.block_num['lte'] = query['before'];
-            }
-            if (Object.keys(rangeObj.range.block_num).length > 0) {
-                if (!queryStruct.bool['filter']) {
-                    queryStruct.bool['filter'] = [];
-                }
-                queryStruct.bool['filter'].push(rangeObj);
+            if (Object.keys(blockRange).length > 0) {
+                queryStruct.bool['filter'].push({range: {block_num: blockRange}});
             }
         }
     }
@@ -277,13 +281,16 @@ export function getSortDir(query, maxAscWindowDays = 90) {
             if (!isValidBound(after) && !isValidBound(before)) {
                 badRequest('sort=asc requires a valid "after" or "before" (ISO date or block number) to bound the search');
             }
-            // validate the time window is not too wide (only for ISO date strings, not block numbers)
-            if (typeof after === 'string' && after.includes('T')) {
+            // Apply the recency window to a *date* "after" bound. Block-number bounds are
+            // exempt — they bound the reverse scan just as well. Classified the same way
+            // as applyTimeFilter so a date without a 'T' (e.g. "2026-01-01", or "0" which
+            // parses to year 2000) cannot slip past the window check.
+            if (after && !isBlockNumber(after)) {
                 const afterDate = new Date(after);
                 if (!isNaN(afterDate.getTime())) {
                     const maxAge = Date.now() - (maxAscWindowDays * 86400000);
                     if (afterDate.getTime() < maxAge) {
-                        badRequest(`sort=asc "after" date must be within the last ${maxAscWindowDays} days`);
+                        badRequest(`sort=asc "after" date must be within the last ${maxAscWindowDays} days — use block numbers for "after"/"before" to query older ranges`);
                     }
                 }
             }

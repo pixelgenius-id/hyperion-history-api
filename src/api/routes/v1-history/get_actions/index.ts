@@ -37,14 +37,12 @@ export default function (fastify: FastifyInstance, opts: any, next) {
                     type: 'string'
                 },
                 "after": {
-                    description: 'filter after specified date (ISO8601)',
-                    type: 'string',
-                    format: 'date-time'
+                    description: 'filter after specified date (ISO8601) or block number',
+                    type: 'string'
                 },
                 "before": {
-                    description: 'filter before specified date (ISO8601)',
-                    type: 'string',
-                    format: 'date-time'
+                    description: 'filter before specified date (ISO8601) or block number',
+                    type: 'string'
                 },
                 "parent": {
                     description: 'filter by parent global sequence',
