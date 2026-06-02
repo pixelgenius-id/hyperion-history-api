@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (dev)
+## 4.0.8 (2026-06-02)
 
 ### Fixes
 
@@ -10,6 +10,23 @@
     *   The **v1** route schema no longer pins `after`/`before` to `format: date-time`, so block-number bounds reach the handler (previously rejected by schema validation before `getActions` ran). v1 also gains real `block_num` filtering — previously a block-number `after`/`before` was silently dropped into the `@timestamp` range.
 
 *   **`/v2/state/get_tokens` missing balances — token-contract detection in `sync accounts`**: `./hyp-control sync accounts` (and `sync all`) resolved a contract's transfer parameter struct by the hard-coded struct name `"transfer"`. Per the ABI spec the struct backing an action is named by the action's `type` field, which is frequently *not* the action name — e.g. several contracts declare a fully standard transfer (`from:name, to:name, quantity:asset, memo:string`) under the struct name `transfer_token`. Those contracts were silently skipped, so their balances were never backfilled into the MongoDB `accounts` collection and `get_tokens` returned only the symbols the live indexer happened to capture — producing a "same contract, some symbols present and some missing" result on upgraded nodes. The struct is now resolved through the transfer action's declared `type`. **After upgrading, re-run `./hyp-control sync accounts <chain>` (or `sync all`) to backfill the previously skipped contracts.**
+
+*   **`ds_pool` dropped traces for unassigned contracts** (PR #169): in heatmap routing mode, a contract with no heatmap assignment yet — fresh or low-traffic chains, or any contract not seen since the last `update_pool_map` — had its traces published to `ds_pool:2` due to an off-by-one: `selected_q` was initialized to `1` and then incremented, while `ds_pool` workers consume `ds_pool:1..ds_pool_size`. With `scaling.ds_pool_size: 1` only `ds_pool:1` exists, so those traces went to a queue with no consumer. Unassigned contracts now route to the first worker (`ds_pool:1`).
+
+*   **`hyp-control indexer stop` failed on pre-4.0 configs**: the CLI client and repair tool did not fall back to control_port `7002` when the field was absent from `connections.json` (the indexer master already did), producing `Invalid URL: ws://localhost:undefined/local`. All three CLI entrypoints now mirror that fallback and warn so the operator can add the field explicitly.
+
+### Improvements
+
+*   **Accurate live progress for `sync accounts`** (PR #171): the progress line was driven by completed-contract counts under misleading names, so a single-contract sync sat at `0/1 (0.00%)` and looked stuck. It now surfaces continuously-moving "holders scanned" and "balances" counters, shows the contract currently in progress, and resets per-contract scope state cleanly.
+
+### Security
+
+*   **`ws` — *Uninitialized memory disclosure* (GHSA, medium)**: the direct `ws` dependency was already `8.20.1`, but transitive dependencies still resolved `ws@8.17.1` / `8.18.x` (< 8.20.1), leaving the advisory open. Added an `overrides` entry pinning `ws` to `8.20.1` across the dependency tree; both lockfiles were regenerated.
+
+### Maintenance
+
+*   Dependency bumps: `nodemailer` 8.0.7 → 8.0.10, `ioredis` 5.10.1 → 5.11.0, `@types/node` 25.5.0 → 25.9.1.
+*   CI now runs Build & Test on `dev` (push + PRs), not only `main` (PR #168).
 
 ## 4.0.7 (2026-05-16)
 
