@@ -300,7 +300,7 @@ export default class MainDSWorker extends HyperionWorker {
                     '@timestamp': block['timestamp'],
                     block_num: res.this_block.block_num.toNumber(),
                     block_id: res.this_block.block_id.toString().toLowerCase(),
-                    prev_id: res.prev_block.block_id.toString().toLowerCase(),
+                    prev_id: res.prev_block ? res.prev_block.block_id.toString().toLowerCase() : '',
                     producer: block.producer,
                     new_producers: block.new_producers,
                     schedule_version: block.schedule_version,
@@ -329,6 +329,7 @@ export default class MainDSWorker extends HyperionWorker {
                         // valid should be false by default if any whitelist is present
                         valid = this.filters.action_whitelist.size === 0;
 
+                        if (!trx.trx[1] || !trx.trx[1].packed_trx) { return; }
                         try {
                             const unpacked_trx = PackedTransaction.from(trx.trx[1]).getTransaction();
                             for (const act of unpacked_trx.actions) {

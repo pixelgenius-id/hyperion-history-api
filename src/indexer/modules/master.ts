@@ -501,6 +501,9 @@ export class HyperionMaster {
                     this.wsRouterWorker.send(msg);
                 }
             },
+            forked_blocks: (_worker: Worker, msg: WorkerMessage) => {
+                hLog(`Forked blocks detected:`, msg.data);
+            },
             indexer_paused: (_worker: Worker, msg: WorkerMessage) => {
                 if (msg.mId) {
                     this.localController.publish(msg.mId, { event: 'indexer_paused', mId: msg.mId });
