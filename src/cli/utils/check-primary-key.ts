@@ -1,4 +1,4 @@
-import {ABI, APIClient, Asset, Name, UInt64} from '@wharfkit/antelope';
+import {ABI, APIClient, Asset, Name, UInt64} from '@pixelgeniusid/antelope';
 import {createHash} from "node:crypto"
 
 

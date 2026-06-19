@@ -5,7 +5,7 @@ import DSPoolWorker from "../../workers/ds-pool.js";
 import { TrxMetadata } from "../../../interfaces/trx-metadata.js";
 import { ActionTrace } from "../../../interfaces/action-trace.js";
 import { hLog } from "../../helpers/common_functions.js";
-import { PackedTransaction, Serializer } from "@wharfkit/antelope";
+import { PackedTransaction, Serializer } from "@pixelgeniusid/antelope";
 import { GetBlocksResultV0 } from "../../workers/state-reader.js";
 
 export default class HyperionParser extends BaseParser {

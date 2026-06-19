@@ -1,11 +1,11 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {mergeActionMeta, timedQuery} from "../../../helpers/functions.js";
 import {hLog} from "../../../../indexer/helpers/common_functions.js";
-import {Abieos} from "@eosrio/node-abieos";
+import {Abieos} from "@pixelgeniusid/node-abieos";
 import {terms} from "../../v2-history/get_actions/definitions.js";
 import {isBlockNumber} from "../../v2-history/get_actions/functions.js";
 import {Client, estypes} from "@elastic/elasticsearch";
-import {ABI, Serializer} from "@wharfkit/antelope";
+import {ABI, Serializer} from "@pixelgeniusid/antelope";
 import {SavedAbi} from "../../../../interfaces/hyperion-abi.js";
 import {ActionTrace} from "../../../../interfaces/action-trace.js";
 

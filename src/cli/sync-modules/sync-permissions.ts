@@ -1,4 +1,4 @@
-import { Name, PublicKey } from "@wharfkit/antelope";
+import { Name, PublicKey } from "@pixelgeniusid/antelope";
 import { cargo } from "async";
 import { Collection } from "mongodb";
 import { IPermission } from "../../interfaces/table-permissions.js";
@@ -7,7 +7,7 @@ import { Synchronizer } from "./synchronizer.js";
 export class PermissionsSynchronizer extends Synchronizer<IPermission> {
     private processedScopes: number = 0;
     private permissionsCollection?: Collection<IPermission>;
-    private systemTokenContract = 'eosio.token';
+    private get systemTokenContract() { return this.tokenContract; }
 
     constructor(chain: string) {
         super(chain, 'permissions');

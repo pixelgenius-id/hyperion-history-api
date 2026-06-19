@@ -1,5 +1,5 @@
 import { createAdapter } from "@socket.io/redis-adapter";
-import { ABI, Name } from "@wharfkit/antelope";
+import { ABI, Name } from "@pixelgeniusid/antelope";
 import { randomUUID } from "crypto";
 import { FastifyInstance } from "fastify";
 import { Redis, RedisOptions } from "ioredis";

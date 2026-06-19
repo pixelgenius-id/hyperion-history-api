@@ -2,7 +2,7 @@ import {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {timedQuery} from "../../../helpers/functions.js";
 import {getSkipLimit} from "../../v2-history/get_actions/functions.js";
 import {hLog} from "../../../../indexer/helpers/common_functions.js";
-import {PublicKey} from "@wharfkit/antelope";
+import {PublicKey} from "@pixelgeniusid/antelope";
 import {request as undiciRequest} from "undici";
 
 

@@ -19,7 +19,7 @@ async function getControlledAccounts(fastify: FastifyInstance, request: FastifyR
                     {
                         bool: {
                             must: [
-                                {term: {"act.account": "eosio"}},
+                                {term: {"act.account": fastify.manager.config.settings.system_contract ?? fastify.manager.config.settings.eosio_alias ?? 'eosio'}},
                                 {term: {"act.name": "newaccount"}},
                                 {term: {"act.authorization.actor": controlling_account}}
                             ]

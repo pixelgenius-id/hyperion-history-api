@@ -1,7 +1,7 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {mergeActionMeta, timedQuery} from "../../../helpers/functions.js";
 import {regroupActions} from "../../../helpers/regroup-actions.js";
-import {API} from "@wharfkit/antelope";
+import {API} from "@pixelgeniusid/antelope";
 
 async function getTransaction(fastify: FastifyInstance, request: FastifyRequest) {
     const redis = fastify.redis;

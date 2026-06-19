@@ -65,13 +65,20 @@ export class HyperionModuleLoader {
 
 
     includeActionModule(_module) {
-        if (this.handledActions.has(_module.contract)) {
-            const existing = this.handledActions.get(_module.contract);
-            existing.set(_module.action, _module.handler);
-        } else {
-            const _map = new Map();
-            _map.set(_module.action, _module.handler);
-            this.handledActions.set(_module.contract, _map);
+        const contracts = [_module.contract];
+        const systemContract = this.config.settings.system_contract ?? this.config.settings.eosio_alias;
+        if (_module.contract === 'eosio' && systemContract && systemContract !== 'eosio') {
+            contracts.push(systemContract);
+        }
+        for (const contract of contracts) {
+            if (this.handledActions.has(contract)) {
+                const existing = this.handledActions.get(contract);
+                existing.set(_module.action, _module.handler);
+            } else {
+                const _map = new Map();
+                _map.set(_module.action, _module.handler);
+                this.handledActions.set(contract, _map);
+            }
         }
         if (_module.mappings) {
             this.extraMappings.push(_module.mappings);

@@ -13,7 +13,7 @@ import { HyperionAbi } from "../../interfaces/hyperion-abi.js";
 import { TransactionTrace } from "../../interfaces/action-trace.js";
 import { HyperionSignedBlock, ProducerSchedule } from "../../interfaces/signed-block.js";
 import { estypes } from "@elastic/elasticsearch";
-import { ABI, Action, PackedTransaction, Serializer } from "@wharfkit/antelope";
+import { ABI, Action, PackedTransaction, Serializer } from "@pixelgeniusid/antelope";
 import { TokenAccount } from "../../interfaces/custom-ds.js";
 import { GetBlocksResultV0 } from "./state-reader.js";
 import { de } from "zod/v4/locales";
@@ -300,7 +300,7 @@ export default class MainDSWorker extends HyperionWorker {
                     '@timestamp': block['timestamp'],
                     block_num: res.this_block.block_num.toNumber(),
                     block_id: res.this_block.block_id.toString().toLowerCase(),
-                    prev_id: res.prev_block.block_id.toString().toLowerCase(),
+                    prev_id: res.prev_block ? res.prev_block.block_id.toString().toLowerCase() : '',
                     producer: block.producer,
                     new_producers: block.new_producers,
                     schedule_version: block.schedule_version,
@@ -321,6 +321,9 @@ export default class MainDSWorker extends HyperionWorker {
 
                 block.transactions.forEach((trx) => {
 
+                    total_cpu += trx['cpu_usage_us'];
+                    total_net += trx['net_usage_words'];
+
                     let valid = true;
 
                     // Check if the transaction is blacklisted or whitelisted
@@ -329,6 +332,7 @@ export default class MainDSWorker extends HyperionWorker {
                         // valid should be false by default if any whitelist is present
                         valid = this.filters.action_whitelist.size === 0;
 
+                        if (!trx.trx[1] || !trx.trx[1].packed_trx) { return; }
                         try {
                             const unpacked_trx = PackedTransaction.from(trx.trx[1]).getTransaction();
                             for (const act of unpacked_trx.actions) {
@@ -351,9 +355,6 @@ export default class MainDSWorker extends HyperionWorker {
                         }
                         
                     }
-
-                    total_cpu += trx['cpu_usage_us'];
-                    total_net += trx['net_usage_words'];
 
                     if (trx.status === 0) {
 
@@ -1437,7 +1438,7 @@ export default class MainDSWorker extends HyperionWorker {
                     hLog(`Failed to process ABI from ${account['name']} at ${block_num}: ${e.message}`);
                 }
             } else {
-                if (account.name === 'eosio') {
+                if (account.name === 'vexcore') {
                     hLog(`---------- ${block_num} ----------------`);
                     hLog(account);
                 }

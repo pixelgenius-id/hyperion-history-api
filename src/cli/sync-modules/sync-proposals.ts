@@ -1,4 +1,4 @@
-import {Name, PackedTransaction, Serializer, UInt64} from "@wharfkit/antelope";
+import {Name, PackedTransaction, Serializer, UInt64} from "@pixelgeniusid/antelope";
 import {cargo} from "async";
 import {Collection} from "mongodb";
 import {IProposal} from "../../interfaces/table-proposal.js";
@@ -31,7 +31,7 @@ export class ProposalSynchronizer extends Synchronizer<IProposal> {
         const proposals: any[] = [];
         do {
             const result = await this.client.v1.chain.get_table_rows({
-                code: "eosio.msig",
+                code: this.msigContract,
                 table: "proposal",
                 scope: scope,
                 limit: 10,
@@ -71,7 +71,7 @@ export class ProposalSynchronizer extends Synchronizer<IProposal> {
         const approvals: any[] = [];
         do {
             const result = await this.client.v1.chain.get_table_rows({
-                code: "eosio.msig",
+                code: this.msigContract,
                 table: "approvals2",
                 scope: scope,
                 limit: 10,
@@ -88,7 +88,7 @@ export class ProposalSynchronizer extends Synchronizer<IProposal> {
         let lb = '';
         do {
             const result = await this.client.v1.chain.get_table_by_scope({
-                code: "eosio.msig",
+                code: this.msigContract,
                 table: "proposal",
                 limit: 300,
                 lower_bound: Name.from(lb).value.toString()

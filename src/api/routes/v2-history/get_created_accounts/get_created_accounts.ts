@@ -17,7 +17,7 @@ async function getCreatedAccounts(fastify: FastifyInstance, request: FastifyRequ
                 must: [
                     {term: {"act.authorization.actor": query.account.toLowerCase()}},
                     {term: {"act.name": "newaccount"}},
-                    {term: {"act.account": "eosio"}}
+                    {term: {"act.account": fastify.manager.config.settings.system_contract ?? fastify.manager.config.settings.eosio_alias ?? 'eosio'}}
                 ]
             }
         },

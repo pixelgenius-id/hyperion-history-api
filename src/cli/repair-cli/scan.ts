@@ -1,5 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
-import { APIClient } from "@wharfkit/antelope";
+import { APIClient } from "@pixelgeniusid/antelope";
 // @ts-ignore
 import cliProgress from 'cli-progress';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';

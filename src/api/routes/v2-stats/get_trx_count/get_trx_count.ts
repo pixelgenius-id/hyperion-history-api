@@ -183,11 +183,10 @@ async function getTrxCount(fastify: FastifyInstance, request: FastifyRequest) {
                     { term: { "action_ordinal": 1 }}
                 ],
                 must_not: [
-                    // Filter out onblock actions from eosio contract (system-generated, not user transactions)
                     {
                         bool: {
                             must: [
-                                { term: { "act.account": "eosio" } },
+                                { term: { "act.account": fastify.manager.config.settings.system_contract ?? fastify.manager.config.settings.eosio_alias ?? 'eosio' } },
                                 { term: { "act.name": "onblock" } }
                             ]
                         }

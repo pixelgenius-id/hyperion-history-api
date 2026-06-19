@@ -1,6 +1,6 @@
 import { Client } from "@elastic/elasticsearch";
 import { EventEmitter } from "events";
-import { Abieos } from "@eosrio/node-abieos";
+import { Abieos } from "@pixelgeniusid/node-abieos";
 import { Channel, ConfirmChannel } from "amqplib";
 
 import { HyperionConfig } from "../../interfaces/hyperionConfig.js";
@@ -12,7 +12,7 @@ import { StateHistorySocket } from "../connections/state-history.js";
 import { BasicDelta } from "../../interfaces/hyperion-delta.js";
 import { getHeapStatistics, HeapInfo } from "node:v8";
 import { HyperionActionAct } from "../../interfaces/hyperion-action.js";
-import { Action, APIClient } from "@wharfkit/antelope";
+import { Action, APIClient } from "@pixelgeniusid/antelope";
 import { HyperionAbi } from "../../interfaces/hyperion-abi.js";
 
 export abstract class HyperionWorker {

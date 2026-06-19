@@ -1,5 +1,5 @@
 import {Client} from "@elastic/elasticsearch";
-import {APIClient} from "@wharfkit/antelope";
+import {APIClient} from "@pixelgeniusid/antelope";
 import {readFileSync} from "fs";
 import {Collection, MongoClient, Document as MongoDoc} from "mongodb";
 import {join} from "path";
@@ -15,11 +15,15 @@ export abstract class Synchronizer<T extends MongoDoc> {
     protected collection?: Collection<T>;
     protected currentBlock: number = 0;
     protected totalItems: number = 0;
+    protected systemContract: string = 'eosio';
+    protected tokenContract: string = 'eosio.token';
+    protected msigContract: string = 'eosio.msig';
 
     protected constructor(chain: string, collectionType: string) {
         this.chain = chain;
         this.indexName = `${chain}-table-${collectionType}-v1`;
         this.connections = this.loadConnections();
+        this.loadChainConfig();
         this.elastic = this.createElasticClient();
         this.client = this.createAPIClient();
     }
@@ -27,6 +31,22 @@ export abstract class Synchronizer<T extends MongoDoc> {
     protected loadConnections(): HyperionConnections {
         const configDir = join(import.meta.dirname, '../../../config');
         return JSON.parse(readFileSync(join(configDir, "connections.json")).toString());
+    }
+
+    protected loadChainConfig(): void {
+        try {
+            const configDir = join(import.meta.dirname, '../../../config');
+            const chainConfig = JSON.parse(readFileSync(join(configDir, 'chains', `${this.chain}.config.json`)).toString());
+            const sc = chainConfig?.settings?.system_contract ?? chainConfig?.settings?.eosio_alias;
+            if (sc && sc !== 'eosio') {
+                this.systemContract = sc;
+                const prefix = sc.replace(/core$/, '');
+                this.tokenContract = `${prefix}token`;
+                this.msigContract = `${prefix}msig`;
+            }
+        } catch {
+            // fallback to eosio defaults
+        }
     }
 
     protected createElasticClient(): Client {

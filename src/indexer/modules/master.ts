@@ -1,6 +1,6 @@
 import { Client, estypes } from '@elastic/elasticsearch';
 
-import { API, APIClient } from '@wharfkit/antelope';
+import { API, APIClient } from '@pixelgeniusid/antelope';
 import { queue, QueueObject } from 'async';
 
 import cluster, { Worker } from 'cluster';
@@ -502,6 +502,9 @@ export class HyperionMaster {
                     msg.data.forkedBlocks = forkedBlocks;
                     this.wsRouterWorker.send(msg);
                 }
+            },
+            forked_blocks: (_worker: Worker, msg: WorkerMessage) => {
+                hLog(`Forked blocks detected:`, msg.data);
             },
             indexer_paused: (_worker: Worker, msg: WorkerMessage) => {
                 if (msg.mId) {

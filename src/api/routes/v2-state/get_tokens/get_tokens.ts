@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { timedQuery } from "../../../helpers/functions.js";
 import { getSkipLimit } from "../../v2-history/get_actions/functions.js";
 import { IAccount } from "../../../../interfaces/table-account.js";
-import { Asset } from "@wharfkit/antelope";
+import { Asset } from "@pixelgeniusid/antelope";
 
 
 async function getTokens(fastify: FastifyInstance, request: FastifyRequest) {

@@ -1,4 +1,4 @@
-import { Name, UInt64 } from "@wharfkit/antelope";
+import { Name, UInt64 } from "@pixelgeniusid/antelope";
 import { cargo } from "async";
 import { IVoter } from "../../interfaces/table-voter.js";
 import { Synchronizer } from "./synchronizer.js";
@@ -14,9 +14,9 @@ export class VoterSynchronizer extends Synchronizer<IVoter> {
         let more = false;
         do {
             const result = await this.client.v1.chain.get_table_rows({
-                code: "eosio",
+                code: this.systemContract,
                 table: "voters",
-                scope: "eosio",
+                scope: this.systemContract,
                 limit: 300,
                 lower_bound: lb ? lb : undefined
             });

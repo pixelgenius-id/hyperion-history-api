@@ -1,4 +1,4 @@
-import { Name, Serializer } from "@wharfkit/antelope";
+import { Name, Serializer } from "@pixelgeniusid/antelope";
 import { cargo } from "async";
 import { Collection } from "mongodb";
 import { IAccount } from "../../interfaces/table-account.js";
@@ -36,8 +36,8 @@ export class AccountSynchronizer extends Synchronizer<IAccount> {
     private async getAbiHashTable(lb?: any) {
         const data = await this.client.v1.chain.get_table_rows({
             table: 'abihash',
-            code: 'eosio',
-            scope: 'eosio',
+            code: this.systemContract,
+            scope: this.systemContract,
             limit: 100,
             lower_bound: lb
         });

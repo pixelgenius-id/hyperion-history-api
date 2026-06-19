@@ -1,4 +1,4 @@
-import {Asset, Struct} from "@wharfkit/antelope";
+import {Asset, Struct} from "@pixelgeniusid/antelope";
 
 @Struct.type("accounts")
 export class TokenAccount extends Struct {
