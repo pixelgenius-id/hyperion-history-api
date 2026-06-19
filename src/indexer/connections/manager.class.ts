@@ -177,9 +177,13 @@ export class ConnectionManager {
     calculateServerHash() {
         exec('git rev-parse HEAD', (err, stdout) => {
             if (err) {
-                // hLog(`\n ${err.message}\n >>> Failed to check last commit hash. Version hash will be "custom"`);
-                hLog(`Failed to check last commit hash. Version hash will be "custom"`);
-                this.last_commit_hash = 'custom';
+                const envHash = process.env.GIT_COMMIT;
+                if (envHash && envHash !== 'unknown') {
+                    this.last_commit_hash = envHash;
+                } else {
+                    hLog(`Failed to check last commit hash. Version hash will be "custom"`);
+                    this.last_commit_hash = 'custom';
+                }
             } else {
                 hLog('Last commit hash on this branch is:', stdout);
                 this.last_commit_hash = stdout.trim();
