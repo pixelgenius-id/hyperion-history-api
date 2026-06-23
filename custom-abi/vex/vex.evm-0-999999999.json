@@ -1,0 +1,48 @@
+{
+  "version": "eosio::abi/1.2",
+  "types": [],
+  "structs": [
+    {
+      "name": "evmtx_v0",
+      "base": "",
+      "fields": [
+        { "name": "rlptx", "type": "bytes" }
+      ]
+    },
+    {
+      "name": "evmtx_v1",
+      "base": "",
+      "fields": [
+        { "name": "eos_evm_version", "type": "uint32" },
+        { "name": "rlptx", "type": "bytes" },
+        { "name": "base_fee_per_gas", "type": "uint64" }
+      ]
+    },
+    {
+      "name": "evmtx",
+      "base": "",
+      "fields": [
+        { "name": "event", "type": "variant_evmtx" }
+      ]
+    },
+    {
+      "name": "pushtx",
+      "base": "",
+      "fields": [
+        { "name": "miner", "type": "name" },
+        { "name": "rlptx", "type": "bytes" }
+      ]
+    }
+  ],
+  "actions": [
+    { "name": "evmtx", "type": "evmtx", "ricardian_contract": "" },
+    { "name": "pushtx", "type": "pushtx", "ricardian_contract": "" }
+  ],
+  "tables": [],
+  "variants": [
+    {
+      "name": "variant_evmtx",
+      "types": ["evmtx_v0", "evmtx_v1"]
+    }
+  ]
+}
