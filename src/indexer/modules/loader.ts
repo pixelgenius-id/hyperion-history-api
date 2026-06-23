@@ -110,6 +110,11 @@ export class HyperionModuleLoader {
                 const _module = value.hyperionModule;
                 if (_module.parser_version.includes(this.config.settings.parser)) {
                     if (_module.chain === this.chainID || _module.chain === '*') {
+                        // skip module if it requires a feature flag that is not enabled
+                        if (_module.requiresFeature && !this.config.settings[_module.requiresFeature]) {
+                            hLog(`[loader] skipping module ${_module.contract}::${_module.action} (requires ${_module.requiresFeature})`);
+                            return;
+                        }
                         const key = `${_module.contract}::${_module.action}`;
                         if (this.chainMappings.has(key)) {
                             if (this.chainMappings.get(key) === '*' && _module.chain === this.chainID) {
