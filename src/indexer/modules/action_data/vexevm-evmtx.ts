@@ -100,8 +100,15 @@ export const hyperionModule = {
                 inputData = fields[5].toString('hex');
             }
 
+            let from: string | null = null;
+            try {
+                const parsed = ethers.Transaction.from('0x' + rlptxHex);
+                from = parsed.from ?? null;
+            } catch (_e) {}
+
             action['@evmtx'] = {
                 hash:      hash,
+                from,
                 to:        to,
                 value:     value.toString(),
                 nonce:     nonce,
