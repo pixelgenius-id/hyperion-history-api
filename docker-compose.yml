@@ -47,6 +47,7 @@ services:
       - rabbitmq
     volumes:
       - ./config:/app/config
+      - ./custom-abi:/app/custom-abi
     command: >
       bash -c "
         sleep 2 &&
