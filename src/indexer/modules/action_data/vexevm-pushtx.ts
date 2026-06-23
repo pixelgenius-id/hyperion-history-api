@@ -77,8 +77,16 @@ function decodeEvmTx(rlptxHex: string): Record<string, any> | null {
         inputData = fields[5].toString('hex');
     }
 
+    // Recover sender from signature using ethers
+    let from: string | null = null;
+    try {
+        const parsed = ethers.Transaction.from('0x' + rlptxHex);
+        from = parsed.from ?? null;
+    } catch (_e) {}
+
     return {
         hash,
+        from,
         to,
         value: value.toString(),
         nonce,
