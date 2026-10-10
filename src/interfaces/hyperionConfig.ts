@@ -134,7 +134,8 @@ interface ApiConfigs {
     enabled?: boolean;
     log_errors?: boolean;
     stream_scroll_batch?: number;
-    stream_scroll_limit?: number;
+    stream_scroll_limit?: number;            // per-request doc cap for stream history replay; -1 = unlimited (default: 50000)
+    stream_max_concurrent_replays?: number;  // max concurrent stream history replays per API process (default: 4)
     pm2_scaling?: number;
 
     // Node.js options
@@ -168,6 +169,25 @@ interface ApiConfigs {
     explorer?: ExplorerConfigs;
     query_timeout?: string;           // ES search timeout (e.g., "5s"), default: "10s"
     max_asc_window_days?: number;     // max range in days for sort=asc queries, default: 90
+    require_bounded_asc?: boolean;    // require a bound (after/before/global_sequence/block_num range) for sort=asc, default: true
+    // Hot-first routing for unbounded latest-N get_actions polls (e.g. account=eosio.token,
+    // desc, no time bound). When enabled, the recent action partition(s) are searched first and
+    // the full <chain>-action-* set is queried only if that window returns fewer than `limit`
+    // hits — so heavy polling never fans out to old/warm shards. Default off.
+    hot_first_actions?: boolean;
+    hot_first_window?: number;        // number of newest action partitions in the hot window, default: 2
+    // Recent-first routing for get_transaction. Without a block_hint, a trx_id lookup has no block
+    // range to prune on and fans out across EVERY action partition (cold tier included). All of a
+    // transaction's documents share one block (one partition), so the hot window is probed first and
+    // the full <chain>-action-* set is queried only on a miss (older/non-existent trx). Reuses
+    // hot_first_window. Default off.
+    hot_first_transaction?: boolean;
+    // Diagnostic: when true, log one line per get_transaction served WITHOUT a block_hint —
+    // which phase served it (hot vs widened), per-phase timings, and how many partitions back the
+    // trx actually was (`parts_back`). Aggregating parts_back reveals the block-age distribution of
+    // lookups, i.e. the hot_first_window that would capture a given fraction of them. Default off;
+    // noisy under load (one line per request) — enable briefly to sample, then disable.
+    hot_first_transaction_profiling?: boolean;
 }
 
 interface ExplorerConfigs {
@@ -238,6 +258,7 @@ export interface HyperionConfig {
         index_deltas: boolean,
         index_transfer_memo: boolean,
         index_all_deltas: boolean,
+        index_deltas_deletions?: boolean,
         deferred_trx: boolean,
         failed_trx: boolean,
         resource_usage: boolean,
@@ -291,6 +312,7 @@ export const HyperionApiConfigSchema = z.object({
     log_errors: z.boolean().optional(),
     stream_scroll_batch: z.number().optional(),
     stream_scroll_limit: z.number().optional(),
+    stream_max_concurrent_replays: z.number().optional(),
     pm2_scaling: z.number().optional(),
     
     // Node.js options
@@ -324,6 +346,11 @@ export const HyperionApiConfigSchema = z.object({
     explorer: ExplorerConfigsSchema.optional(),
     query_timeout: z.string().optional(),
     max_asc_window_days: z.number().optional(),
+    require_bounded_asc: z.boolean().optional(),
+    hot_first_actions: z.boolean().optional(),
+    hot_first_window: z.number().optional(),
+    hot_first_transaction: z.boolean().optional(),
+    hot_first_transaction_profiling: z.boolean().optional(),
 });
 
 // Zod schema for tiered index allocation settings
@@ -464,6 +491,7 @@ const FeaturesSchema = z.object({
     index_deltas: z.boolean(),
     index_transfer_memo: z.boolean(),
     index_all_deltas: z.boolean(),
+    index_deltas_deletions: z.boolean().optional(),
     deferred_trx: z.boolean(),
     failed_trx: z.boolean(),
     resource_usage: z.boolean(),
