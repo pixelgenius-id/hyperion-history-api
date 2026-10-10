@@ -160,15 +160,19 @@ export class SocketManager {
 
         // handle delta stream request
         socket.on('delta_stream_request', async (data: StreamDeltasRequest, callback) => {
-            this.processStreamRequest('delta', socket, data, callback).catch(reason => {
-                return callback({ status: 'ERROR', message: reason });
+            // a client may ask without an ack: answering it then threw and crashed the API
+            const ack = typeof callback === 'function' ? callback : () => { };
+            this.processStreamRequest('delta', socket, data, ack).catch(reason => {
+                return ack({ status: 'ERROR', message: reason });
             });
         });
 
         // handle action stream request
         socket.on('action_stream_request', async (data: StreamActionsRequest, callback) => {
-            this.processStreamRequest('action', socket, data, callback).catch(reason => {
-                return callback({ status: 'ERROR', message: reason });
+            // a client may ask without an ack: answering it then threw and crashed the API
+            const ack = typeof callback === 'function' ? callback : () => { };
+            this.processStreamRequest('action', socket, data, ack).catch(reason => {
+                return ack({ status: 'ERROR', message: reason });
             });
         });
 
